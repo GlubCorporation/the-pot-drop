@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="en" data-static>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Suppliers · The Pot Drop</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo" aria-hidden="true">▼</span>
+      <div>
+        <h1>Suppliers</h1>
+        <p class="muted" id="window-note">Who's listing, selling out and restocking</p>
+      </div>
+    </div>
+    <div class="scrape-controls">
+      <a class="btn ghost" href="graveyard.html">🪦 Graveyard</a>
+      <a class="btn ghost live-only" href="checks.html">📋 Checks</a>
+      <a class="btn ghost" href="./">← Dashboard</a>
+      <a class="btn support" href="https://ko-fi.com/thepotdrop" target="_blank" rel="noopener">☕ Support this site</a>
+    </div>
+  </header>
+
+  <main>
+    <section class="tiles" aria-label="Summary">
+      <div class="tile hero">
+        <span class="tile-label">Active stores</span>
+        <span class="tile-value" id="t-active">–</span>
+        <span class="tile-sub" id="t-active-sub"></span>
+      </div>
+      <div class="tile">
+        <span class="tile-label">New products</span>
+        <span class="tile-value" id="t-new">–</span>
+        <span class="tile-sub" id="t-new-sub"></span>
+      </div>
+      <div class="tile">
+        <span class="tile-label">Sold out</span>
+        <span class="tile-value" id="t-sold">–</span>
+        <span class="tile-sub" id="t-sold-sub"></span>
+      </div>
+      <div class="tile">
+        <span class="tile-label">Restocked</span>
+        <span class="tile-value" id="t-restocked">–</span>
+        <span class="tile-sub" id="t-restocked-sub"></span>
+      </div>
+    </section>
+
+    <section class="filters" aria-label="Filters">
+      <div class="seg" role="tablist" aria-label="View">
+        <button type="button" role="tab" class="active" data-view="stores" aria-selected="true">Stores</button>
+        <button type="button" role="tab" data-view="calendar" aria-selected="false">Calendar</button>
+        <button type="button" role="tab" class="live-only" data-view="ask" aria-selected="false">Ask</button>
+      </div>
+      <input id="search" class="stores-only" type="search" placeholder="Find a store…" />
+      <select id="days" class="period-filter" aria-label="Period">
+        <option value="7">Last 7 days</option>
+        <option value="30">Last 30 days</option>
+        <option value="90">Last 90 days</option>
+      </select>
+      <select id="type" class="period-filter" aria-label="Product type">
+        <option value="">All types</option>
+      </select>
+      <select id="sort" class="stores-only" aria-label="Sort">
+        <option value="moves">Most activity</option>
+        <option value="turnover">Highest turnover</option>
+        <option value="new">Most new products</option>
+        <option value="sold">Most sold out</option>
+        <option value="restocked">Most restocks</option>
+        <option value="shelf">Sells out fastest</option>
+        <option value="inStock">Most in stock</option>
+        <option value="name">Store name</option>
+      </select>
+      <label class="check stores-only"><input id="quiet" type="checkbox" /> Hide quiet stores</label>
+      <span id="result-count" class="muted count stores-only"></span>
+    </section>
+
+    <section class="cal-view" id="calendar-view" hidden aria-label="Calendar of all stores">
+      <div class="cal-legend" aria-hidden="true">
+        <span class="cal-n listed">New</span><span class="cal-n soldOut">Sold out</span>
+        <span class="cal-n restocked">Restocked</span><span class="cal-n pulled">Pulled</span>
+      </div>
+      <div class="cal" id="cal"></div>
+      <div id="cal-day"></div>
+    </section>
+
+    <section class="ask-view" id="ask-view" hidden aria-label="Ask about the data">
+      <div class="ask-head">
+        <span class="muted" id="ask-count"></span>
+        <button class="btn ghost check-btn" id="ask-clear" type="button" hidden>Clear history</button>
+      </div>
+      <div class="ask-log" id="ask-log" aria-live="polite"></div>
+      <form class="ask-form" id="ask-form">
+        <textarea id="ask-input" rows="2" maxlength="2000" placeholder="Ask about suppliers, prices, stock or reviews…"></textarea>
+        <button class="btn" id="ask-send" type="submit">Ask</button>
+      </form>
+      <div class="ask-examples" id="ask-examples">
+        <button type="button" class="tag">Which flower suppliers restocked the most this week?</button>
+        <button type="button" class="tag">Who's cheapest per gram for an ounce of flower right now?</button>
+        <button type="button" class="tag">Which highly rated products keep selling out?</button>
+        <button type="button" class="tag">Any stores that look like they're winding down before the ban?</button>
+      </div>
+      <p class="muted hint">Answered by Claude Code on this PC with your Claude plan, from the tracker's data and web searches. Each answer takes about 10–60 seconds. Questions and answers are saved; a follow-up within 30 minutes sees the last few answers.</p>
+    </section>
+
+    <section class="table-wrap" id="stores-view">
+      <table class="checks suppliers">
+        <thead>
+          <tr>
+            <th>Store</th>
+            <th class="num" title="Products in stock now, of those listed">In stock</th>
+            <th class="num" title="Products listed in the period (the store's own listing date where it gives one)">New</th>
+            <th class="num" title="Products whose every option sold out, including ones that vanished while in stock from stores that hide sold-out items">Sold out</th>
+            <th class="num" title="Sold-out products back in stock">Restocked</th>
+            <th class="num hide-sm" title="Products taken off the store's catalog">Removed</th>
+            <th class="num" title="Median days from going on sale (listed or restocked) to selling out">Sells out in</th>
+            <th class="num hide-sm" title="Units sold, from the stock counts the few stores that show them">Units</th>
+            <th class="hide-sm">Last new</th>
+            <th class="num" title="New listings, sell-outs and restocks per listed product in the period">Turnover</th>
+          </tr>
+        </thead>
+        <tbody id="rows"></tbody>
+      </table>
+      <p id="empty" class="empty" hidden>No stores match.</p>
+    </section>
+    <p class="muted hint stores-only" id="hint">
+      Stores are compared on what they listed, sold out and restocked while being checked (about hourly), so events are only as precise as the checks.
+      A product is in stock while any of its options is. Click a store for its product timelines, calendar and events.
+    </p>
+  </main>
+
+  <dialog id="store" class="store-dialog">
+    <div class="detail-head">
+      <div>
+        <h2 id="sd-title"></h2>
+        <p class="muted" id="sd-sub"></p>
+      </div>
+      <div class="detail-actions">
+        <a id="sd-link" class="btn ghost" target="_blank" rel="noopener">Visit store ↗</a>
+        <button class="btn ghost" id="sd-close">Close</button>
+      </div>
+    </div>
+    <div class="seg sd-tabs" role="tablist" aria-label="Store view">
+      <button type="button" role="tab" class="active" data-tab="timeline" aria-selected="true">Timeline</button>
+      <button type="button" role="tab" data-tab="calendar" aria-selected="false">Calendar</button>
+      <button type="button" role="tab" data-tab="events" aria-selected="false">Events</button>
+      <button type="button" role="tab" class="live-only" data-tab="brief" aria-selected="false">Brief</button>
+    </div>
+
+    <div class="sd-pane" data-pane="timeline">
+      <div class="filters tl-filters">
+        <input id="tl-search" type="search" placeholder="Find a product…" />
+        <label class="check"><input id="tl-all" type="checkbox" /> Include unchanged products</label>
+        <span class="tl-legend" aria-hidden="true">
+          <span><i class="seg-in"></i>In stock</span><span><i class="seg-out"></i>Sold out</span><span><i class="seg-gone"></i>Off the site</span>
+        </span>
+        <span id="tl-count" class="muted count"></span>
+      </div>
+      <div class="table-wrap tl-wrap">
+        <div class="tl" id="tl"></div>
+        <p id="tl-empty" class="empty" hidden>No product changed stock in this period.</p>
+      </div>
+    </div>
+
+    <div class="sd-pane" data-pane="calendar" hidden>
+      <div class="cal-legend" aria-hidden="true">
+        <span class="cal-n listed">New</span><span class="cal-n soldOut">Sold out</span>
+        <span class="cal-n restocked">Restocked</span><span class="cal-n pulled">Pulled</span>
+      </div>
+      <div class="cal" id="sd-cal"></div>
+      <div id="sd-cal-day"></div>
+    </div>
+
+    <div class="sd-pane" data-pane="events" hidden>
+      <div class="table-wrap timeline-wrap">
+        <table class="checks">
+          <thead><tr><th>When</th><th>Event</th><th>Product</th><th class="hide-sm">Type</th></tr></thead>
+          <tbody id="ev-rows"></tbody>
+        </table>
+        <p id="ev-empty" class="empty" hidden>Nothing happened in this period.</p>
+      </div>
+    </div>
+
+    <div class="sd-pane" data-pane="brief" hidden>
+      <div class="brief-head">
+        <span class="muted" id="brief-meta"></span>
+        <button class="btn" id="brief-run" type="button">Write brief</button>
+      </div>
+      <p class="muted ask-status" id="brief-status" hidden></p>
+      <div class="md brief-body" id="brief-body"></div>
+      <p class="muted hint">A buyer's brief from the tracker's data and a few web searches, written by Claude Code on this PC with your Claude plan. It takes about a minute and keeps going if you close this window.</p>
+    </div>
+  </dialog>
+
+  <script src="suppliers.js"></script>
+  <script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "adff3905079443068fbe034a20087518"}'></script>
+</body>
+</html>
