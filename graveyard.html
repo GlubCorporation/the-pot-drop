@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en" data-static>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Graveyard · The Pot Drop</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo" aria-hidden="true">▼</span>
+      <div>
+        <h1>Graveyard</h1>
+        <p class="muted">Stores that closed or went offline</p>
+      </div>
+    </div>
+    <div class="scrape-controls">
+      <a class="btn ghost" href="suppliers.html">📈 Suppliers</a>
+      <a class="btn ghost" href="./">← Dashboard</a>
+      <a class="btn support" href="https://ko-fi.com/thepotdrop" target="_blank" rel="noopener">☕ Support this site</a>
+    </div>
+  </header>
+
+  <main>
+    <p class="muted graves-intro">These stores are no longer checked or shown on the dashboard. The dates come from their checks:
+      <strong>last seen online</strong> is the last check that could read the catalog, and <strong>went offline</strong> is the first one after it that couldn't.
+      Times are US Central.</p>
+    <section id="graves" class="graves" aria-label="Closed stores"></section>
+    <p id="empty" class="empty" hidden>No stores have closed. Yet.</p>
+  </main>
+
+  <script src="graveyard.js"></script>
+  <script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "adff3905079443068fbe034a20087518"}'></script>
+</body>
+</html>

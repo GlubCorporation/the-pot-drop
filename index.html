@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="en" data-static>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>The Pot Drop</title>
+  <link rel="stylesheet" href="styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo" aria-hidden="true">▼</span>
+      <div>
+        <h1>The Pot Drop</h1>
+        <p class="muted">THCa price tracker</p>
+      </div>
+    </div>
+    <div class="scrape-controls">
+      <label class="field live-only">
+        <span>Check every</span>
+        <select id="interval">
+          <option value="15">15 min</option>
+          <option value="30">30 min</option>
+          <option value="60">1 hour</option>
+          <option value="120">2 hours</option>
+          <option value="360">6 hours</option>
+          <option value="720">12 hours</option>
+          <option value="1440">24 hours</option>
+          <option value="custom">Custom…</option>
+        </select>
+      </label>
+      <a class="btn ghost" href="suppliers.html">📈 Suppliers</a>
+      <a class="btn ghost" href="graveyard.html">🪦 Graveyard</a>
+      <a class="btn ghost live-only" href="checks.html">📋 Checks</a>
+      <button id="open-alerts" class="btn ghost live-only">🔔 Alerts</button>
+      <button id="scrape-now" class="btn live-only">Check now</button>
+      <a class="btn support" href="https://ko-fi.com/thepotdrop" target="_blank" rel="noopener">☕ Support this site</a>
+    </div>
+  </header>
+
+  <main>
+    <section class="tiles" aria-label="Summary">
+      <div class="tile hero">
+        <span class="tile-label">Until the ban</span>
+        <span class="tile-value" id="countdown">–</span>
+        <span class="tile-sub" id="ban-date"></span>
+      </div>
+      <div class="tile">
+        <span class="tile-label">Products tracked</span>
+        <span class="tile-value" id="stat-products">–</span>
+        <span class="tile-sub" id="stat-instock"></span>
+      </div>
+      <div class="tile">
+        <span class="tile-label">Dropped since tracking</span>
+        <span class="tile-value" id="stat-dropped">–</span>
+        <span class="tile-sub" id="stat-dropped-sub"></span>
+      </div>
+      <a class="tile tile-link" href="checks.html" title="See every store's checks">
+        <span class="tile-label">Last check ›</span>
+        <span class="tile-value small" id="stat-last">–</span>
+        <span class="tile-sub" id="stat-next"></span>
+      </a>
+    </section>
+
+    <section class="filters" aria-label="Filters">
+      <input id="search" type="search" placeholder="Search products or variants…" />
+      <details class="multi" id="store-picker">
+        <summary id="store-summary">All stores</summary>
+        <div class="multi-panel">
+          <input type="search" id="store-search" placeholder="Find a store…" aria-label="Find a store" />
+          <div class="multi-actions">
+            <button type="button" class="btn ghost" id="stores-all">All</button>
+            <button type="button" class="btn ghost" id="stores-none">None</button>
+            <button type="button" class="btn ghost" id="stores-invert">Invert</button>
+          </div>
+          <div id="store-list" class="multi-list"></div>
+        </div>
+      </details>
+      <select id="filter-type"><option value="">All types</option></select>
+      <select id="filter-size" title="Show products with an option in this size; prices are for that size"></select>
+      <select id="filter-potency" title="Minimum potency the store lists (THCa, or total THC / cannabinoids where that's all it gives)"></select>
+      <select id="filter-strain">
+        <option value="">All strains</option>
+        <option value="indica">Indica + leaning</option>
+        <option value="Indica">Indica</option>
+        <option value="Hybrid">Hybrid</option>
+        <option value="Sativa">Sativa</option>
+        <option value="sativa">Sativa + leaning</option>
+      </select>
+      <select id="filter-grow">
+        <option value="">Any grow</option>
+        <option value="Indoor">Indoor</option>
+        <option value="Greenhouse">Greenhouse</option>
+        <option value="Outdoor">Outdoor</option>
+      </select>
+      <label class="check" title="Only products with a lab report (COA) link"><input id="filter-coa" type="checkbox" /> Lab report</label>
+      <select id="sort">
+        <option value="drop">Biggest drop</option>
+        <option value="price-asc">Price: low → high</option>
+        <option value="code-asc">Price after code: low → high</option>
+        <option value="unit-asc">Price per gram / each: low → high</option>
+        <option value="value-asc">Price per gram of THCa: low → high</option>
+        <option value="potency-desc">Potency: high → low</option>
+        <option value="price-desc">Price: high → low</option>
+        <option value="newest-drop">Newest price drop</option>
+        <option value="newest" selected>Newest listed</option>
+        <option value="top-rated">Top rated</option>
+        <option value="most-reviewed">Most reviewed</option>
+        <option value="name">Name</option>
+      </select>
+      <label class="check"><input id="filter-instock" type="checkbox" checked /> In stock only</label>
+      <button type="button" id="reset-filters" class="btn ghost" title="Back to all stores and types, in-stock items, newest listed first" disabled>Reset all</button>
+      <span id="result-count" class="muted count"></span>
+    </section>
+
+    <section class="table-wrap">
+      <table class="products">
+        <thead>
+          <tr>
+            <th class="col-img"></th>
+            <th>Product</th>
+            <th class="num">From</th>
+            <th class="num" title="Largest drop of any option since we started tracking it">Best drop</th>
+            <th class="num hide-sm">Range</th>
+            <th class="hide-sm">Trend</th>
+          </tr>
+        </thead>
+        <tbody id="product-rows"></tbody>
+      </table>
+      <p id="empty" class="empty" hidden>No products match.</p>
+    </section>
+    <div class="more-wrap"><button id="show-more" class="btn ghost" hidden>Show more</button></div>
+  </main>
+
+  <dialog id="detail">
+    <div class="detail-head">
+      <div>
+        <h2 id="detail-title"></h2>
+        <p class="muted" id="detail-meta"></p>
+      </div>
+      <div class="detail-actions">
+        <a id="detail-coa" class="btn ghost" target="_blank" rel="noopener" hidden>Lab report ↗</a>
+        <a id="detail-link" class="btn ghost" target="_blank" rel="noopener">View on site ↗</a>
+        <button class="btn ghost" id="detail-close" aria-label="Close">✕</button>
+      </div>
+    </div>
+    <form class="watch live-only" id="watch-form">
+      <span>🎯 Alert me when this is at or below</span>
+      <span class="money-input">$<input id="watch-target" type="number" min="0.01" step="0.01" inputmode="decimal" required /></span>
+      <button class="btn" type="submit" id="watch-save">Set alert</button>
+      <button class="btn ghost" type="button" id="watch-remove" hidden>Remove</button>
+      <span class="muted" id="watch-status"></span>
+    </form>
+    <div id="detail-codes" class="codes" hidden></div>
+    <p class="muted hint" id="detail-hint"></p>
+    <div class="chart-box"><canvas id="detail-chart"></canvas></div>
+    <div class="table-wrap">
+      <table class="variants">
+        <thead>
+          <tr>
+            <th class="col-plot">Plot</th>
+            <th>Variant</th>
+            <th class="num">Now</th>
+            <th class="num">With code</th>
+            <th class="num hide-sm">First seen</th>
+            <th class="num">Change</th>
+            <th class="num hide-sm">Low / High</th>
+            <th>Stock</th>
+          </tr>
+        </thead>
+        <tbody id="variant-rows"></tbody>
+      </table>
+    </div>
+  </dialog>
+
+  <dialog id="alerts">
+    <div class="detail-head">
+      <div>
+        <h2>Drop alerts</h2>
+        <p class="muted" id="alerts-discord"></p>
+      </div>
+      <div class="detail-actions">
+        <button class="btn ghost" id="alerts-close" aria-label="Close">✕</button>
+      </div>
+    </div>
+    <div class="table-wrap routes" id="alerts-routes" hidden></div>
+
+    <form id="alerts-form" class="alert-rule">
+      <label class="check"><input type="checkbox" id="al-enabled" /> Send alerts to Discord</label>
+      <div class="rule-row">
+        <span>Alert when an option's price drops at least</span>
+        <span class="money-input"><input id="al-pct" type="number" min="1" max="95" step="1" required />%</span>
+        <span>and at least</span>
+        <span class="money-input">$<input id="al-dollars" type="number" min="0" step="1" required /></span>
+        <span>from its previous price.</span>
+      </div>
+      <label class="check"><input type="checkbox" id="al-instock" /> Only options that are in stock</label>
+      <label class="check"><input type="checkbox" id="al-new" /> Also alert on new listings (a store adds a product)</label>
+      <fieldset class="types">
+        <legend>Product types <span class="muted">(none ticked = all)</span></legend>
+        <div id="al-types"></div>
+      </fieldset>
+      <p class="muted hint">The same option isn't re-alerted for 7 days unless it drops below the price you were last alerted at. Product watches (🎯) are always sent. New-item alerts follow the in-stock and type settings, and skip a store's very first check.</p>
+      <div class="detail-actions">
+        <button class="btn" type="submit">Save</button>
+        <button class="btn ghost" type="button" id="al-test">Send test alert</button>
+        <button class="btn ghost" type="button" id="al-sample">Send sample drop</button>
+      </div>
+    </form>
+
+    <div class="drops-head">
+      <h3>Drops in the last 7 days</h3>
+      <label class="check"><input type="checkbox" id="drops-big" checked /> Only ones matching the rule</label>
+    </div>
+    <div class="table-wrap">
+      <table class="drops">
+        <thead>
+          <tr><th>When</th><th>Product</th><th class="num">Price</th><th class="num">Drop</th><th></th></tr>
+        </thead>
+        <tbody id="drop-rows"></tbody>
+      </table>
+      <p id="drops-empty" class="empty" hidden>No drops yet. They'll appear here after the next checks.</p>
+    </div>
+  </dialog>
+
+  <div id="toast" class="toast" hidden></div>
+  <script src="app.js"></script>
+  <script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "adff3905079443068fbe034a20087518"}'></script>
+</body>
+</html>
