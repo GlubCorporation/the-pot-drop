@@ -1,0 +1,356 @@
+<!doctype html>
+<html lang="en" data-static>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>The Pot Drop</title>
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <meta name="theme-color" content="#fcfcfb" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#1a1a19" media="(prefers-color-scheme: dark)" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="Pot Drop" />
+  <link rel="stylesheet" href="styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+</head>
+<body>
+  <!-- Phones: the brand and search scroll away and the tabs sit at the
+       bottom of the screen. Wider screens: one sticky bar with the tabs in it.
+       The owner's tools stay last: publishing adds its Support button at their end. -->
+  <header class="topbar">
+    <a class="brand" href="./">
+      <img class="logo" src="icons/icon.svg" alt="" width="36" height="36" />
+      <span class="brand-text">
+        <span class="brand-name">The Pot Drop</span>
+        <span class="brand-sub" id="stat-ban"><strong id="countdown">–</strong> until the ban</span>
+      </span>
+    </a>
+    <nav class="app-nav" aria-label="Main">
+      <a class="nav-item" href="./" data-nav="deals" aria-current="page">
+        <span class="nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg></span>
+        <span class="nav-label">Deals</span>
+      </a>
+      <a class="nav-item" href="suppliers.html" data-nav="stores">
+        <span class="nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9l1.5-5h15L21 9"/><path d="M4 9v11h16V9"/><path d="M9 20v-6h6v6"/></svg></span>
+        <span class="nav-label">Stores</span>
+      </a>
+      <a class="nav-item nav-board" href="board.html" data-nav="board">
+        <span class="nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 11.5a8.5 8.5 0 0 1-12.3 7.6L3 21l1.9-5.7A8.5 8.5 0 1 1 21 11.5z"/></svg></span>
+        <span class="nav-label">Board</span>
+      </a>
+      <a class="nav-item" href="#alerts" id="open-notify" data-nav="alerts">
+        <span class="nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg><span class="badge" id="alerts-count" hidden></span></span>
+        <span class="nav-label">Alerts</span>
+      </a>
+      <a class="nav-item" href="#saved" id="nav-saved" data-nav="saved">
+        <span class="nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12v18l-6-4-6 4z"/></svg><span class="badge" id="saved-count" hidden></span></span>
+        <span class="nav-label">Saved</span>
+      </a>
+    </nav>
+    <label class="top-search">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input id="search" type="search" placeholder="Search strains, stores, products" aria-label="Search products" />
+    </label>
+    <div class="scrape-controls">
+      <button type="button" class="btn ghost install-btn" id="install-app" hidden title="Install The Pot Drop as an app">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg><span class="btn-text">Install app</span>
+      </button>
+      <a class="owner-status live-only" href="checks.html" title="See every store's checks"><span id="stat-next"></span></a>
+      <label class="field live-only">
+        <span>Check every</span>
+        <select id="interval">
+          <option value="15">15 min</option>
+          <option value="30">30 min</option>
+          <option value="60">1 hour</option>
+          <option value="120">2 hours</option>
+          <option value="360">6 hours</option>
+          <option value="720">12 hours</option>
+          <option value="1440">24 hours</option>
+          <option value="custom">Custom…</option>
+        </select>
+      </label>
+      <a class="btn ghost live-only" href="checks.html">Checks</a>
+      <button id="open-alerts" class="btn ghost live-only">Discord alerts</button>
+      <button id="scrape-now" class="btn live-only">Check now</button>
+    </div>
+  </header>
+
+  <main>
+    <div class="feed-head">
+      <div class="feed-titles">
+        <h1 id="feed-title">Biggest discounts</h1>
+        <p class="muted feed-sub" id="feed-sub"><span id="stat-sale">–</span> on sale at <span id="stat-sale-stores">–</span> stores<span id="stat-sale-avg"></span> · <span id="stat-last">–</span></p>
+        <p class="muted feed-sub" id="view-sub" hidden></p>
+      </div>
+      <div class="feed-actions">
+        <select id="sort" aria-label="Sort">
+          <option value="discount" selected>Biggest % off</option>
+          <option value="drop">Biggest drop since tracking</option>
+          <option value="price-asc">Price: low → high</option>
+          <option value="code-asc">Price after code: low → high</option>
+          <option value="unit-asc">Price per gram / each: low → high</option>
+          <option value="value-asc">Price per gram of THCa: low → high</option>
+          <option value="potency-desc">Potency: high → low</option>
+          <option value="price-desc">Price: high → low</option>
+          <option value="newest-drop">Newest price drop</option>
+          <option value="newest">Newest listed</option>
+          <option value="top-rated">Top rated</option>
+          <option value="most-reviewed">Most reviewed</option>
+          <option value="name">Name</option>
+        </select>
+        <button type="button" id="share-view" class="btn ghost icon-btn" aria-label="Copy a link to this view" title="Copy a link to this search, filters, sort and stores">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1"/><path d="M14 10a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- What's filtered, as chips you tap to turn off. On a phone the Filters
+         button opens the rest as a sheet; wider screens show them in a sidebar. -->
+    <section class="product-filters" aria-label="Active filters">
+      <button type="button" id="open-filters" class="filters-toggle" aria-controls="filter-panel" aria-expanded="false">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1"/><circle cx="15" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="18" r="2"/></svg>
+        Filters <span id="filter-badge" class="badge" hidden></span>
+      </button>
+      <div id="filter-chips" class="chips"></div>
+      <span id="result-count" class="muted count"></span>
+    </section>
+
+    <div class="feed-layout">
+      <aside id="filter-panel" class="filter-panel" aria-labelledby="filter-panel-title">
+        <div class="sheet-head">
+          <h2 id="filter-panel-title">Filters</h2>
+          <button type="button" class="btn ghost" id="close-filters" aria-label="Close filters">✕</button>
+        </div>
+        <div class="sheet-body">
+          <div class="filter-field wide" id="store-field">
+            <span class="filter-label">Stores</span>
+            <details class="multi" id="store-picker">
+              <summary id="store-summary">All stores</summary>
+              <div class="multi-panel">
+                <input type="search" id="store-search" placeholder="Find a store…" aria-label="Find a store" />
+                <div class="multi-actions">
+                  <button type="button" class="btn ghost" id="stores-all">All</button>
+                  <button type="button" class="btn ghost" id="stores-none">None</button>
+                  <button type="button" class="btn ghost" id="stores-invert">Invert</button>
+                </div>
+                <div id="store-list" class="multi-list"></div>
+              </div>
+            </details>
+          </div>
+          <label class="filter-field"><span class="filter-label">Type</span>
+            <select id="filter-type"><option value="">All types</option></select></label>
+          <label class="filter-field"><span class="filter-label">Discount</span>
+            <select id="filter-discount" title="How far below the regular price: the store's &quot;was&quot; price, or the first price we saw if that's higher">
+              <option value="">Any price</option>
+              <option value="10">10%+ off</option>
+              <option value="20">20%+ off</option>
+              <option value="30">30%+ off</option>
+              <option value="50">50%+ off</option>
+            </select></label>
+          <label class="filter-field"><span class="filter-label">Size</span>
+            <select id="filter-size" title="Show products with an option in this size; prices are for that size"></select></label>
+          <label class="filter-field"><span class="filter-label">Potency</span>
+            <select id="filter-potency" title="Minimum potency the store lists (THCa, or total THC / cannabinoids where that's all it gives)"></select></label>
+          <label class="filter-field"><span class="filter-label">Strain</span>
+            <select id="filter-strain">
+              <option value="">All strains</option>
+              <option value="indica">Indica + leaning</option>
+              <option value="Indica">Indica</option>
+              <option value="Hybrid">Hybrid</option>
+              <option value="Sativa">Sativa</option>
+              <option value="sativa">Sativa + leaning</option>
+            </select></label>
+          <label class="filter-field"><span class="filter-label">Grow</span>
+            <select id="filter-grow">
+              <option value="">Any grow</option>
+              <option value="Indoor">Indoor</option>
+              <option value="Greenhouse">Greenhouse</option>
+              <option value="Outdoor">Outdoor</option>
+            </select></label>
+          <div class="filter-checks">
+            <label class="check"><input id="filter-instock" type="checkbox" checked /> In stock only</label>
+            <label class="check" title="Only products a discount code works on"><input id="filter-code" type="checkbox" /> Has a code</label>
+            <label class="check" title="Only products with a lab report (COA) link"><input id="filter-coa" type="checkbox" /> Lab report</label>
+          </div>
+        </div>
+        <div class="sheet-foot">
+          <button type="button" class="btn ghost" id="sheet-reset">Reset all</button>
+          <button type="button" class="btn" id="sheet-done">Show products</button>
+        </div>
+      </aside>
+      <div id="filter-backdrop" class="sheet-backdrop" hidden></div>
+
+      <section class="feed" aria-labelledby="feed-title">
+        <div id="product-rows" class="deal-list"></div>
+        <p id="empty" class="empty" hidden>No products match.</p>
+        <div class="more-wrap"><button id="show-more" class="btn ghost" hidden>Show more</button></div>
+      </section>
+    </div>
+
+    <!-- The Alerts tab: alerts for what the Deals list shows, kept in this browser. -->
+    <section id="alerts-view" class="alerts-view" aria-labelledby="feed-title" hidden>
+      <div class="panel notify-perm" id="notify-perm">
+        <span class="panel-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg></span>
+        <div class="notify-perm-text">
+          <strong id="notify-perm-title">Notifications</strong>
+          <p class="muted" id="notify-status"></p>
+        </div>
+        <button type="button" class="btn" id="notify-allow" hidden>Turn on</button>
+      </div>
+
+      <form id="notify-form" class="panel alert-rule">
+        <h2>New alert</h2>
+        <p class="notify-for">For what Deals shows now: <strong id="notify-view"></strong>
+          <a href="./" class="notify-edit" data-go-deals>Change filters</a></p>
+        <label class="filter-field"><span class="filter-label">Name</span>
+          <input id="notify-name" type="text" maxlength="60" required /></label>
+        <label class="option-row"><input type="checkbox" id="notify-new" checked />
+          <span>New listings, and grab bag strains back in stock</span></label>
+        <div class="option-row">
+          <label><input type="checkbox" id="notify-drops" checked /> <span>Price drops of at least</span></label>
+          <span class="money-input"><input id="notify-pct" type="number" min="1" max="95" step="1" value="15" required />%</span>
+        </div>
+        <div><button class="btn" type="submit">Add alert</button></div>
+      </form>
+
+      <section class="panel">
+        <h2>Your alerts</h2>
+        <ul id="notify-list" class="notify-list"></ul>
+        <p id="notify-empty" class="empty">No alerts yet. Set the filters on Deals for what you want, then add one here.</p>
+      </section>
+
+      <p class="muted hint">Alerts are kept in this browser only. They're checked whenever this page loads new prices (every few minutes while it's open in a tab), so keep a tab open to hear about things as they happen. When you come back, you're told about matches from while you were away (up to 3 days back). Each match is announced once.</p>
+    </section>
+  </main>
+
+  <footer class="site-foot">
+    <p class="muted">Tracking <span id="stat-products">–</span> products (<span id="stat-instock">–</span> in stock) at <span id="stat-stores">–</span> stores. Prices are the stores' own; check the store before you buy.</p>
+    <p class="muted"><a href="graveyard.html">🪦 Graveyard</a>: stores that closed or went offline</p>
+  </footer>
+
+  <dialog id="detail" aria-labelledby="detail-title">
+    <div class="detail-head">
+      <h2 id="detail-title"></h2>
+      <div class="detail-actions">
+        <button class="btn ghost" id="detail-close" aria-label="Close">✕</button>
+      </div>
+    </div>
+    <div class="detail-links">
+      <a id="detail-link" class="btn" target="_blank" rel="noopener">View on site ↗</a>
+      <a id="detail-coa" class="btn ghost" target="_blank" rel="noopener" hidden>Lab report ↗</a>
+      <button type="button" class="btn ghost save-btn" id="detail-save" aria-pressed="false">Save</button>
+    </div>
+    <!-- Wide screens: the product on the left, its history on the right (styles.css). -->
+    <div class="detail-body">
+      <div class="detail-side">
+        <div class="detail-hero">
+          <!-- The photo opens the product on the store's site, like View on site. -->
+          <a id="detail-media" class="detail-image" target="_blank" rel="noopener"></a>
+          <div class="detail-info">
+            <p class="muted" id="detail-meta"></p>
+          </div>
+        </div>
+        <div id="detail-codes" class="codes" hidden></div>
+        <form class="watch live-only" id="watch-form">
+          <span>🎯 Alert me when this is at or below</span>
+          <span class="money-input">$<input id="watch-target" type="number" min="0.01" step="0.01" inputmode="decimal" required /></span>
+          <button class="btn" type="submit" id="watch-save">Set alert</button>
+          <button class="btn ghost" type="button" id="watch-remove" hidden>Remove</button>
+          <span class="muted" id="watch-status"></span>
+        </form>
+      </div>
+      <div class="detail-main">
+        <p class="muted hint" id="detail-hint"></p>
+        <div class="chart-box"><canvas id="detail-chart"></canvas></div>
+        <ul class="chart-legend" id="detail-legend" hidden></ul>
+        <section class="stock-box" id="detail-stock" aria-labelledby="detail-stock-title" hidden>
+          <div class="stock-box-head">
+            <h3 id="detail-stock-title">Stock</h3>
+            <span class="tl-legend" aria-hidden="true">
+              <span><i class="seg-in"></i>In stock</span><span><i class="seg-out"></i>Sold out</span><span><i class="seg-gone"></i>Off the site</span>
+            </span>
+          </div>
+          <div class="table-wrap"><div class="tl tl-product" id="detail-tl"></div></div>
+          <p class="muted hint" id="detail-stock-note"></p>
+          <button type="button" class="btn ghost stock-more" id="detail-stock-more" hidden></button>
+        </section>
+        <div class="table-wrap">
+          <table class="variants">
+            <thead>
+              <tr>
+                <th class="col-plot">Plot</th>
+                <th>Variant</th>
+                <th class="num">Now</th>
+                <th class="num">With code</th>
+                <th class="num hide-sm">First seen</th>
+                <th class="num">Change</th>
+                <th class="num hide-sm">Low / High</th>
+                <th>Stock</th>
+              </tr>
+            </thead>
+            <tbody id="variant-rows"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </dialog>
+
+  <dialog id="alerts">
+    <div class="detail-head">
+      <div>
+        <h2>Drop alerts</h2>
+        <p class="muted" id="alerts-discord"></p>
+      </div>
+      <div class="detail-actions">
+        <button class="btn ghost" id="alerts-close" aria-label="Close">✕</button>
+      </div>
+    </div>
+    <div class="table-wrap routes" id="alerts-routes" hidden></div>
+
+    <form id="alerts-form" class="alert-rule">
+      <label class="check"><input type="checkbox" id="al-enabled" /> Send alerts to Discord</label>
+      <div class="rule-row">
+        <span>Alert when an option's price drops at least</span>
+        <span class="money-input"><input id="al-pct" type="number" min="1" max="95" step="1" required />%</span>
+        <span>and at least</span>
+        <span class="money-input">$<input id="al-dollars" type="number" min="0" step="1" required /></span>
+        <span>from its previous price.</span>
+      </div>
+      <label class="check"><input type="checkbox" id="al-instock" /> Only options that are in stock</label>
+      <label class="check"><input type="checkbox" id="al-new" /> Also alert on new listings (a store adds a product)</label>
+      <fieldset class="types">
+        <legend>Product types <span class="muted">(none ticked = all)</span></legend>
+        <div id="al-types"></div>
+      </fieldset>
+      <p class="muted hint">The same option isn't re-alerted for 7 days unless it drops below the price you were last alerted at. Product watches (🎯) are always sent. New-item alerts follow the in-stock and type settings, and skip a store's very first check.</p>
+      <div class="detail-actions">
+        <button class="btn" type="submit">Save</button>
+        <button class="btn ghost" type="button" id="al-test">Send test alert</button>
+        <button class="btn ghost" type="button" id="al-sample">Send sample drop</button>
+      </div>
+    </form>
+
+    <div class="drops-head">
+      <h3>Drops in the last 7 days</h3>
+      <label class="check"><input type="checkbox" id="drops-big" checked /> Only ones matching the rule</label>
+    </div>
+    <div class="table-wrap">
+      <table class="drops stack">
+        <thead>
+          <tr><th>When</th><th>Product</th><th class="num">Price</th><th class="num">Drop</th><th></th></tr>
+        </thead>
+        <tbody id="drop-rows"></tbody>
+      </table>
+      <p id="drops-empty" class="empty" hidden>No drops yet. They'll appear here after the next checks.</p>
+    </div>
+  </dialog>
+
+  <div id="toast" class="toast" hidden></div>
+  <script src="dialogs.js"></script>
+  <script src="app.js"></script>
+  <script src="pwa.js"></script>
+  <script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "adff3905079443068fbe034a20087518"}'></script>
+</body>
+</html>
